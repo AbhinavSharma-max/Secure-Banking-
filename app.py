@@ -31,7 +31,21 @@ from werkzeug.exceptions import HTTPException
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-app = Flask(__name__, static_folder=os.path.join(BASE_DIR, "static"), static_url_path="/static")
+def _find_static_dir():
+    """Locate the 'static' folder even if it was uploaded as 'Static' (Linux is case-sensitive)."""
+    exact = os.path.join(BASE_DIR, "static")
+    if os.path.isdir(exact):
+        return exact
+    try:
+        for name in os.listdir(BASE_DIR):
+            if name.lower() == "static" and os.path.isdir(os.path.join(BASE_DIR, name)):
+                return os.path.join(BASE_DIR, name)
+    except OSError:
+        pass
+    return exact
+
+
+app = Flask(__name__, static_folder=_find_static_dir(), static_url_path="/static")
 app.config.update(
     DB_PATH=os.environ.get("DB_PATH", os.path.join(BASE_DIR, "bank.db")),
     DEMO_MODE=os.environ.get("DEMO_MODE", "1") == "1",  # show OTP on screen (no SMS gateway)
